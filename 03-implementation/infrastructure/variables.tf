@@ -6,5 +6,5 @@ variable "project_name" {
 variable "app_service_sku" {
   description = "App Service Plan SKU"
   type        = string
-  default     = "B1"
+  default     = "D1"
 }
