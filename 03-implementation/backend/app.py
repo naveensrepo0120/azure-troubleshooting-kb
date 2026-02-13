@@ -5,6 +5,8 @@ from azure.cosmos import CosmosClient
 import os
 import uuid
 from typing import List, Optional
+from azure.search.documents import SearchClient
+from azure.core.credentials import AzureKeyCredential
 
 app = FastAPI()
 
@@ -12,6 +14,8 @@ app = FastAPI()
 COSMOS_ENDPOINT = os.environ.get("COSMOS_ENDPOINT")
 DATABASE_NAME = "troubleshootingdb"
 CONTAINER_NAME = "troubleshooting"
+SEARCH_ENDPOINT = os.environ.get("SEARCH_ENDPOINT")
+SEARCH_INDEX_NAME = "troubleshooting-index"
 
 
 # -----------------------------
@@ -25,6 +29,14 @@ def get_container():
     client = CosmosClient(COSMOS_ENDPOINT, credential=credential)
     database = client.get_database_client(DATABASE_NAME)
     return database.get_container_client(CONTAINER_NAME)
+
+def get_search_client():
+    credential = DefaultAzureCredential()
+    return SearchClient(
+        endpoint=SEARCH_ENDPOINT,
+        index_name=SEARCH_INDEX_NAME,
+        credential=credential
+    )
 
 
 # -----------------------------
@@ -58,6 +70,10 @@ def create_entry(entry: TroubleshootingEntry):
         item["id"] = str(uuid.uuid4())
 
         container.create_item(body=item)
+        search_client = get_search_client()
+        search_client = get_search_client()
+        search_client.upload_documents(documents=[item])
+        
         return item
 
     except Exception as e:

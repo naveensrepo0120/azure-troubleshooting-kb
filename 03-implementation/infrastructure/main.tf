@@ -30,11 +30,16 @@ resource "azurerm_linux_web_app" "api" {
     type = "SystemAssigned"
   }
 
-  site_config {}
+  site_config {
+  app_command_line = "gunicorn -k uvicorn.workers.UvicornWorker app:app"
+}
 
   app_settings = {
-    WEBSITE_RUN_FROM_PACKAGE = "1"
     ENVIRONMENT              = var.environment
+    SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
+    COSMOS_ENDPOINT                = "https://cosmosaztkbdev.documents.azure.com:443/"
+    SEARCH_ENDPOINT                = "https://${azurerm_search_service.search.name}.search.windows.net"
+
   }
 }
 
@@ -99,7 +104,7 @@ resource "azurerm_cosmosdb_sql_container" "container" {
   account_name        = azurerm_cosmosdb_account.cosmos.name
   database_name       = azurerm_cosmosdb_sql_database.db.name
 
-  partition_key_path = "/id"
+  partition_key_paths = ["/id"]
 }
 
 # =========================
@@ -116,15 +121,16 @@ resource "azurerm_cosmosdb_sql_role_assignment" "cosmos_data_access" {
 }
 
 # Azure Cognitive Search
+
 resource "azurerm_search_service" "search" {
   name                = var.search_service_name
-  location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku                 = "basic"
 
-  sku = "basic"
-
-  replica_count = 1
-  partition_count = 1
+  identity {
+    type = "SystemAssigned"
+  }
 }
 
 resource "azurerm_role_assignment" "search_access" {
@@ -133,4 +139,8 @@ resource "azurerm_role_assignment" "search_access" {
   principal_id         = azurerm_linux_web_app.api.identity[0].principal_id
 }
 
-
+resource "azurerm_role_assignment" "search_data_access" {
+  scope                = azurerm_search_service.search.id
+  role_definition_name = "Search Index Data Contributor"
+  principal_id         = azurerm_linux_web_app.api.identity[0].principal_id
+}
