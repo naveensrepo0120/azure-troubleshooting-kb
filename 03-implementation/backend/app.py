@@ -31,14 +31,18 @@ def get_container():
     return database.get_container_client(CONTAINER_NAME)
 
 def get_search_client():
-    credential = DefaultAzureCredential()
+    if not SEARCH_ENDPOINT:
+        raise Exception("SEARCH_ENDPOINT not configured")
+
+    key = os.environ.get("SEARCH_API_KEY")
+    if not key:
+        raise Exception("SEARCH_API_KEY not configured")
+
     return SearchClient(
         endpoint=SEARCH_ENDPOINT,
         index_name=SEARCH_INDEX_NAME,
-        credential=credential
+        credential=AzureKeyCredential(key)
     )
-
-
 # -----------------------------
 # Request model
 # -----------------------------
