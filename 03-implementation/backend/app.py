@@ -71,7 +71,6 @@ def create_entry(entry: TroubleshootingEntry):
 
         container.create_item(body=item)
         search_client = get_search_client()
-        search_client = get_search_client()
         search_client.upload_documents(documents=[item])
         
         return item
