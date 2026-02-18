@@ -39,7 +39,7 @@ resource "azurerm_linux_web_app" "api" {
     SCM_DO_BUILD_DURING_DEPLOYMENT = "1"
     COSMOS_ENDPOINT                = "https://cosmosaztkbdev.documents.azure.com:443/"
     SEARCH_ENDPOINT                = "https://${azurerm_search_service.search.name}.search.windows.net"
-
+    SEARCH_API_KEY                 =  "bToqcmCa6GRL8iJFLj6R8tAtoYpIsmcZLeXTvYO1ySAzSeDx3juG"
   }
 }
 
