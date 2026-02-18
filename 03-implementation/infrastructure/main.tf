@@ -31,12 +31,12 @@ resource "azurerm_linux_web_app" "api" {
   }
 
   site_config {
-  app_command_line = "gunicorn -k uvicorn.workers.UvicornWorker app:app"
+  app_command_line = "python -m uvicorn application:app --host 0.0.0.0 --port 8000"
 }
 
   app_settings = {
     ENVIRONMENT              = var.environment
-    SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
+    SCM_DO_BUILD_DURING_DEPLOYMENT = "1"
     COSMOS_ENDPOINT                = "https://cosmosaztkbdev.documents.azure.com:443/"
     SEARCH_ENDPOINT                = "https://${azurerm_search_service.search.name}.search.windows.net"
 
