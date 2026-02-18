@@ -9,6 +9,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: 03-implementation/backend
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -30,17 +34,13 @@ jobs:
         python-version: '3.11'
 
     - name: Install Dependencies
-      run: |
-        python -m venv antenv
-        source antenv/bin/activate
-        pip install -r requirements.txt
+      run: pip install -r requirements.txt
 
     - name: Zip Application
-      run: zip -r release.zip . -x "antenv/*" ".git/*"
+      run: zip -r release.zip . -x ".git/*"
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
         package: release.zip
-        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
