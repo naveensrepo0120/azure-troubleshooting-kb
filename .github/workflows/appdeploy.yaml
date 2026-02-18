@@ -1,4 +1,4 @@
-name: Deploy FastAPI to Azure
+name: Deploy FastAPI Backend
 
 on:
   push:
@@ -36,11 +36,11 @@ jobs:
     - name: Install Dependencies
       run: pip install -r requirements.txt
 
-    - name: Zip Application
+    - name: Create Deployment Package
       run: zip -r release.zip . -x ".git/*"
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-        package: release.zip
+        package: 03-implementation/backend/release.zip
