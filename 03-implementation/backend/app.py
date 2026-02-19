@@ -122,6 +122,8 @@ def search_entries(
             query_type="semantic",
             semantic_configuration_name="kb-semantic-config",
             query_language="en-us",
+            filter=filter_query,
+            facets=["status", "tags"],
             top=10
         )
 
