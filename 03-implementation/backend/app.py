@@ -69,17 +69,25 @@ def health():
 @app.post("/api/troubleshooting", status_code=201)
 def create_entry(entry: TroubleshootingEntry):
     try:
+        # 🔎 Temporary Debug
+        print("SEARCH_ENDPOINT:", SEARCH_ENDPOINT)
+        print("SEARCH_API_KEY exists:", bool(os.environ.get("SEARCH_API_KEY")))
+
         container = get_container()
         item = entry.model_dump()
         item["id"] = str(uuid.uuid4())
 
         container.create_item(body=item)
+
         search_client = get_search_client()
         search_client.upload_documents(documents=[item])
-        
+
         return item
 
     except Exception as e:
+        import traceback
+        print("ERROR:", str(e))
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
