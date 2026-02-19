@@ -119,11 +119,10 @@ def search_entries(
 
         results = search_client.search(
             search_text=q or "*",
-            filter=filter_query,
-            facets=["status", "tags"],
-            top=10,
-            scoring_profile="kb-ranking-profile",
-            search_mode="all"
+            query_type="semantic",
+            semantic_configuration_name="kb-semantic-config",
+            query_language="en-us",
+            top=10
         )
 
         response = {
