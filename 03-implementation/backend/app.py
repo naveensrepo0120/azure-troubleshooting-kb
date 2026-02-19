@@ -4,7 +4,6 @@ from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
-from azure.search.documents.models import SemanticSearchOptions
 import os
 import uuid
 from typing import List, Optional
@@ -118,16 +117,10 @@ def search_entries(
 
         filter_query = " and ".join(filters) if filters else None
 
-        # Semantic Options (Correct SDK Usage)
-        semantic_options = SemanticSearchOptions(
-            semantic_configuration_name="kb-semantic-config",
-            query_language="en-us"
-        )
-
         results = search_client.search(
             search_text=q or "*",
             query_type="semantic",
-            semantic_search_options=semantic_options,
+            semantic_configuration_name="kb-semantic-config",
             filter=filter_query,
             facets=["status", "tags"],
             top=10
