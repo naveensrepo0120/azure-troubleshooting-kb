@@ -99,28 +99,40 @@ def create_entry(entry: TroubleshootingEntry):
 # Search Entries (Cognitive Search)
 # -----------------------------
 @app.get("/api/troubleshooting/search")
-def search_entries(q: Optional[str] = None):
-    if not q:
-        raise HTTPException(status_code=400, detail="Search query required")
-
+def search_entries(
+    q: Optional[str] = None,
+    status: Optional[str] = None,
+    tag: Optional[str] = None
+):
     try:
         search_client = get_search_client()
 
+        filters = []
+
+        if status:
+            filters.append(f"status eq '{status}'")
+
+        if tag:
+            filters.append(f"tags/any(t: t eq '{tag}')")
+
+        filter_query = " and ".join(filters) if filters else None
+
         results = search_client.search(
-            search_text=q,
-            include_total_count=True
+            search_text=q or "*",
+            filter=filter_query,
+            facets=["status", "tags"],
+            top=10
         )
 
-        items = [result for result in results]
-
-        return {
-            "count": results.get_count(),
-            "results": items
+        response = {
+            "results": [doc for doc in results],
+            "facets": results.get_facets()
         }
+
+        return response
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # -----------------------------
 # Get Entry by ID (Cosmos)
