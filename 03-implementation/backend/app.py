@@ -114,22 +114,21 @@ def search_entries(q: Optional[str] = None):
         raise HTTPException(status_code=400, detail="Search query required")
 
     try:
-        container = get_container()
-        query = (
-            "SELECT * FROM c "
-            "WHERE CONTAINS(c.title, @query) "
-            "OR CONTAINS(c.issueDescription, @query)"
+        search_client = get_search_client()
+
+        results = search_client.search(
+            search_text=q,
+            include_total_count=True
         )
 
-        items = list(
-            container.query_items(
-                query=query,
-                parameters=[{"name": "@query", "value": q}],
-                enable_cross_partition_query=True,
-            )
-        )
+        items = []
+        for result in results:
+            items.append(result)
 
-        return items
+        return {
+            "count": results.get_count(),
+            "results": items
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
