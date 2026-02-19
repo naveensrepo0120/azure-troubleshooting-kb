@@ -4,6 +4,7 @@ from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
+from azure.search.documents.models import SemanticSearchOptions
 import os
 import uuid
 from typing import List, Optional
@@ -96,7 +97,7 @@ def create_entry(entry: TroubleshootingEntry):
 
 
 # -----------------------------
-# Search Entries (Cognitive Search)
+# Search Entries (Semantic Search Enabled)
 # -----------------------------
 @app.get("/api/troubleshooting/search")
 def search_entries(
@@ -117,12 +118,18 @@ def search_entries(
 
         filter_query = " and ".join(filters) if filters else None
 
+        # Semantic Options (Correct SDK Usage)
+        semantic_options = SemanticSearchOptions(
+            semantic_configuration_name="kb-semantic-config",
+            query_language="en-us"
+        )
+
         results = search_client.search(
             search_text=q or "*",
             query_type="semantic",
-            semantic_configuration_name="kb-semantic-config",
-            query_language="en-us",
+            semantic_search_options=semantic_options,
             filter=filter_query,
+            facets=["status", "tags"],
             top=10
         )
 
@@ -135,6 +142,7 @@ def search_entries(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # -----------------------------
 # Get Entry by ID (Cosmos)
