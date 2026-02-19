@@ -121,7 +121,9 @@ def search_entries(
             search_text=q or "*",
             filter=filter_query,
             facets=["status", "tags"],
-            top=10
+            top=10,
+            scoring_profile="kb-ranking-profile",
+            search_mode="all"
         )
 
         response = {
