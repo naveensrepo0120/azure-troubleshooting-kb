@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Azure Troubleshooting KB</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        input, select { padding: 8px; margin: 5px; }
+        button { padding: 8px 12px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 6px; }
+        .tags { color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<h2>Azure Troubleshooting Knowledge Base</h2>
+
+<div>
+    <input type="text" id="searchQuery" placeholder="Search issues..." />
+    <select id="statusFilter">
+        <option value="">All Status</option>
+        <option value="Resolved">Resolved</option>
+        <option value="Open">Open</option>
+    </select>
+    <button onclick="search()">Search</button>
+</div>
+
+<div id="results"></div>
+
+<hr>
+
+<h3>Add New Entry</h3>
+
+<input type="text" id="title" placeholder="Title"><br>
+<input type="text" id="description" placeholder="Issue Description"><br>
+<input type="text" id="resolution" placeholder="Resolution"><br>
+<input type="text" id="tags" placeholder="Tags (comma separated)"><br>
+<select id="status">
+    <option value="Resolved">Resolved</option>
+    <option value="Open">Open</option>
+</select>
+<br>
+<button onclick="createEntry()">Create</button>
+
+<script>
+
+const API_BASE = "https://app-aztkb-api-dev.azurewebsites.net";
+
+async function search() {
+    const query = document.getElementById("searchQuery").value;
+    const status = document.getElementById("statusFilter").value;
+
+    let url = `${API_BASE}/api/troubleshooting/search?q=${query}`;
+
+    if (status) {
+        url += `&status=${status}`;
+    }
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const container = document.getElementById("results");
+    container.innerHTML = "";
+
+    data.results.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+            <strong>${item.title}</strong><br>
+            ${item.issueDescription}<br>
+            <em>${item.resolution}</em><br>
+            <div class="tags">${item.tags.join(", ")}</div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+async function createEntry() {
+
+    const body = {
+        title: document.getElementById("title").value,
+        issueDescription: document.getElementById("description").value,
+        stepsTaken: [],
+        resolution: document.getElementById("resolution").value,
+        status: document.getElementById("status").value,
+        tags: document.getElementById("tags").value.split(",").map(t => t.trim())
+    };
+
+    await fetch(`${API_BASE}/api/troubleshooting`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+
+    alert("Entry created!");
+}
+
+</script>
+
+</body>
+</html>
