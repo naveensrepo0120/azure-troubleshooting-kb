@@ -3,95 +3,241 @@
 <head>
     <title>Azure Troubleshooting KB</title>
     <style>
-        body { font-family: Arial; margin: 40px; }
-        input, select { padding: 8px; margin: 5px; }
-        button { padding: 8px 12px; }
-        .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 6px; }
-        .tags { color: #666; font-size: 12px; }
+        body {
+            font-family: Segoe UI, Arial;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 40px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        input, select {
+            padding: 10px;
+            margin: 5px 5px 5px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: none;
+            background: #0078d4;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: white;
+        }
+
+        .resolved {
+            background: #28a745;
+        }
+
+        .open {
+            background: #dc3545;
+        }
+
+        .spinner {
+            display: none;
+            margin-left: 10px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
-<h2>Azure Troubleshooting Knowledge Base</h2>
+<div class="container">
+    <h1>Azure Troubleshooting Knowledge Base</h1>
 
-<div>
-    <input type="text" id="searchQuery" placeholder="Search issues..." />
-    <select id="statusFilter">
-        <option value="">All Status</option>
-        <option value="Resolved">Resolved</option>
-        <option value="Open">Open</option>
-    </select>
-    <button onclick="search()">Search</button>
+    <!-- Search Section -->
+    <div class="card">
+        <input type="text" id="searchQuery" placeholder="Search issues..." onkeypress="handleEnter(event)" />
+        <select id="statusFilter">
+            <option value="">All Status</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Open">Open</option>
+        </select>
+        <button id="searchBtn" onclick="search()">Search</button>
+        <span class="spinner" id="loadingSpinner">Searching...</span>
+    </div>
+
+    <!-- Results -->
+    <div id="results"></div>
+
+    <!-- Create Section -->
+    <div class="card">
+        <h3>Add New Entry</h3>
+
+        <input type="text" id="title" placeholder="Title" required><br>
+        <input type="text" id="description" placeholder="Issue Description" required><br>
+        <input type="text" id="resolution" placeholder="Resolution" required><br>
+        <input type="text" id="tags" placeholder="Tags (comma separated)" required><br>
+
+        <select id="status">
+            <option value="Resolved">Resolved</option>
+            <option value="Open">Open</option>
+        </select>
+        <br>
+        <button id="createBtn" onclick="createEntry()">Create</button>
+
+        <div id="formMessage"></div>
+    </div>
 </div>
-
-<div id="results"></div>
-
-<hr>
-
-<h3>Add New Entry</h3>
-
-<input type="text" id="title" placeholder="Title"><br>
-<input type="text" id="description" placeholder="Issue Description"><br>
-<input type="text" id="resolution" placeholder="Resolution"><br>
-<input type="text" id="tags" placeholder="Tags (comma separated)"><br>
-<select id="status">
-    <option value="Resolved">Resolved</option>
-    <option value="Open">Open</option>
-</select>
-<br>
-<button onclick="createEntry()">Create</button>
 
 <script>
 
 const API_BASE = "https://app-aztkb-api-dev.azurewebsites.net";
 
+function handleEnter(event) {
+    if (event.key === "Enter") {
+        search();
+    }
+}
+
 async function search() {
+
     const query = document.getElementById("searchQuery").value;
     const status = document.getElementById("statusFilter").value;
 
-    let url = `${API_BASE}/api/troubleshooting/search?q=${query}`;
+    const searchBtn = document.getElementById("searchBtn");
+    const spinner = document.getElementById("loadingSpinner");
+
+    searchBtn.disabled = true;
+    spinner.style.display = "inline";
+
+    let url = `${API_BASE}/api/troubleshooting/search?q=${encodeURIComponent(query)}`;
 
     if (status) {
         url += `&status=${status}`;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Search failed");
 
+        const data = await response.json();
+        renderResults(data.results);
+
+    } catch (err) {
+        alert("Error fetching results");
+    }
+
+    searchBtn.disabled = false;
+    spinner.style.display = "none";
+}
+
+function renderResults(items) {
     const container = document.getElementById("results");
     container.innerHTML = "";
 
-    data.results.forEach(item => {
+    if (!items || items.length === 0) {
+        container.innerHTML = "<div class='card'>No results found</div>";
+        return;
+    }
+
+    items.forEach(item => {
+
+        const statusClass = item.status === "Resolved" ? "resolved" : "open";
+
         const div = document.createElement("div");
         div.className = "card";
+
         div.innerHTML = `
-            <strong>${item.title}</strong><br>
-            ${item.issueDescription}<br>
-            <em>${item.resolution}</em><br>
-            <div class="tags">${item.tags.join(", ")}</div>
+            <strong>${item.title}</strong>
+            <span class="badge ${statusClass}">${item.status}</span>
+            <p>${item.issueDescription}</p>
+            <p><em>${item.resolution}</em></p>
+            <small>${item.tags ? item.tags.join(", ") : ""}</small>
         `;
+
         container.appendChild(div);
     });
 }
 
 async function createEntry() {
 
-    const body = {
-        title: document.getElementById("title").value,
-        issueDescription: document.getElementById("description").value,
-        stepsTaken: [],
-        resolution: document.getElementById("resolution").value,
-        status: document.getElementById("status").value,
-        tags: document.getElementById("tags").value.split(",").map(t => t.trim())
-    };
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+    const resolution = document.getElementById("resolution").value;
+    const tags = document.getElementById("tags").value;
+    const status = document.getElementById("status").value;
+    const message = document.getElementById("formMessage");
+    const createBtn = document.getElementById("createBtn");
 
-    await fetch(`${API_BASE}/api/troubleshooting`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
+    if (!title || !description || !resolution || !tags) {
+        message.innerHTML = "<div class='error'>All fields are required</div>";
+        return;
+    }
 
-    alert("Entry created!");
+    createBtn.disabled = true;
+    message.innerHTML = "";
+
+    try {
+
+        const response = await fetch(`${API_BASE}/api/troubleshooting`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title,
+                issueDescription: description,
+                stepsTaken: [],
+                resolution,
+                status,
+                tags: tags.split(",").map(t => t.trim())
+            })
+        });
+
+        if (!response.ok) throw new Error("Create failed");
+
+        message.innerHTML = "<div class='success'>Entry created successfully</div>";
+
+        document.getElementById("title").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("resolution").value = "";
+        document.getElementById("tags").value = "";
+
+        search();
+
+    } catch (err) {
+        message.innerHTML = "<div class='error'>Failed to create entry</div>";
+    }
+
+    createBtn.disabled = false;
 }
 
 </script>
