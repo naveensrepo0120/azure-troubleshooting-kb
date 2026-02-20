@@ -32,6 +32,7 @@
             margin: 5px 5px 5px 0;
             border-radius: 6px;
             border: 1px solid #ccc;
+            width: 300px;
         }
 
         button {
@@ -53,6 +54,7 @@
             border-radius: 12px;
             font-size: 12px;
             color: white;
+            margin-left: 10px;
         }
 
         .resolved {
@@ -103,16 +105,16 @@
     <div class="card">
         <h3>Add New Entry</h3>
 
-        <input type="text" id="title" placeholder="Title" required><br>
-        <input type="text" id="description" placeholder="Issue Description" required><br>
-        <input type="text" id="resolution" placeholder="Resolution" required><br>
-        <input type="text" id="tags" placeholder="Tags (comma separated)" required><br>
+        <input type="text" id="title" placeholder="Title"><br>
+        <input type="text" id="description" placeholder="Issue Description"><br>
+        <input type="text" id="resolution" placeholder="Resolution"><br>
+        <input type="text" id="tags" placeholder="Tags (comma separated)"><br>
 
         <select id="status">
             <option value="Resolved">Resolved</option>
             <option value="Open">Open</option>
         </select>
-        <br>
+        <br><br>
         <button id="createBtn" onclick="createEntry()">Create</button>
 
         <div id="formMessage"></div>
@@ -131,7 +133,7 @@ function handleEnter(event) {
 
 async function search() {
 
-    const query = document.getElementById("searchQuery").value;
+    const query = document.getElementById("searchQuery").value.trim();
     const status = document.getElementById("statusFilter").value;
 
     const searchBtn = document.getElementById("searchBtn");
@@ -154,7 +156,8 @@ async function search() {
         renderResults(data.results);
 
     } catch (err) {
-        alert("Error fetching results");
+        document.getElementById("results").innerHTML =
+            "<div class='card error'>Error fetching results</div>";
     }
 
     searchBtn.disabled = false;
@@ -162,6 +165,7 @@ async function search() {
 }
 
 function renderResults(items) {
+
     const container = document.getElementById("results");
     container.innerHTML = "";
 
@@ -191,21 +195,53 @@ function renderResults(items) {
 
 async function createEntry() {
 
-    const title = document.getElementById("title").value;
-    const description = document.getElementById("description").value;
-    const resolution = document.getElementById("resolution").value;
-    const tags = document.getElementById("tags").value;
+    const titleInput = document.getElementById("title");
+    const descriptionInput = document.getElementById("description");
+    const resolutionInput = document.getElementById("resolution");
+    const tagsInput = document.getElementById("tags");
+
+    const title = titleInput.value.trim();
+    const description = descriptionInput.value.trim();
+    const resolution = resolutionInput.value.trim();
+    const tagsRaw = tagsInput.value.trim();
+
     const status = document.getElementById("status").value;
     const message = document.getElementById("formMessage");
     const createBtn = document.getElementById("createBtn");
 
-    if (!title || !description || !resolution || !tags) {
-        message.innerHTML = "<div class='error'>All fields are required</div>";
+    // Reset styles
+    [titleInput, descriptionInput, resolutionInput, tagsInput]
+        .forEach(el => el.style.border = "1px solid #ccc");
+
+    message.innerHTML = "";
+
+    // Validation
+    if (!title || !description || !resolution || !tagsRaw) {
+
+        message.innerHTML =
+            "<div class='error'>All fields are required and cannot be empty spaces</div>";
+
+        if (!title) titleInput.style.border = "1px solid red";
+        if (!description) descriptionInput.style.border = "1px solid red";
+        if (!resolution) resolutionInput.style.border = "1px solid red";
+        if (!tagsRaw) tagsInput.style.border = "1px solid red";
+
+        return;
+    }
+
+    const tags = tagsRaw
+        .split(",")
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+
+    if (tags.length === 0) {
+        message.innerHTML =
+            "<div class='error'>At least one valid tag is required</div>";
+        tagsInput.style.border = "1px solid red";
         return;
     }
 
     createBtn.disabled = true;
-    message.innerHTML = "";
 
     try {
 
@@ -218,23 +254,25 @@ async function createEntry() {
                 stepsTaken: [],
                 resolution,
                 status,
-                tags: tags.split(",").map(t => t.trim())
+                tags
             })
         });
 
         if (!response.ok) throw new Error("Create failed");
 
-        message.innerHTML = "<div class='success'>Entry created successfully</div>";
+        message.innerHTML =
+            "<div class='success'>Entry created successfully</div>";
 
-        document.getElementById("title").value = "";
-        document.getElementById("description").value = "";
-        document.getElementById("resolution").value = "";
-        document.getElementById("tags").value = "";
+        titleInput.value = "";
+        descriptionInput.value = "";
+        resolutionInput.value = "";
+        tagsInput.value = "";
 
         search();
 
     } catch (err) {
-        message.innerHTML = "<div class='error'>Failed to create entry</div>";
+        message.innerHTML =
+            "<div class='error'>Failed to create entry</div>";
     }
 
     createBtn.disabled = false;
